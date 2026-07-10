@@ -1,32 +1,31 @@
 import { ConfigurationBanner } from '@/components/ConfigurationBanner';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { PipelineStageContent } from '@/components/PipelineStageContent';
 import { PipelineStepper } from '@/components/PipelineStepper';
-import { RefinedStoryResult } from '@/components/RefinedStoryResult';
 import { StoryIntakeForm } from '@/components/StoryIntakeForm';
-import { TestCaseForm } from '@/components/TestCaseForm';
-import { TestCaseResult } from '@/components/TestCaseResult';
 import { useBackendReadiness } from '@/hooks/useBackendReadiness';
 import { usePipeline } from '@/hooks/usePipeline';
 import type { PipelineStep } from '@/types/pipeline';
 
 function App() {
-  const { readiness, isReady, isChecking, retryReadiness } = useBackendReadiness();
   const {
     currentStep,
-    userStory,
+    description,
+    acceptanceCriteria,
     refinedStory,
     testCases,
+    playwrightScript,
     isLoading,
     error,
     timeLeft,
-    showStep3Result,
-    setUserStory,
+    setDescription,
+    setAcceptanceCriteria,
     submitStory,
-    submitTestCases,
     dismissError,
   } = usePipeline();
 
+  const { readiness, isReady, isChecking, retryReadiness } = useBackendReadiness();
   const pipelineDisabled = !isReady;
 
   return (
@@ -57,39 +56,23 @@ function App() {
         <div className="relative">
           {currentStep === 1 ? (
             <StoryIntakeForm
-              userStory={userStory}
+              description={description}
+              acceptanceCriteria={acceptanceCriteria}
               isLoading={isLoading}
               disabled={pipelineDisabled}
-              onUserStoryChange={setUserStory}
+              onDescriptionChange={setDescription}
+              onAcceptanceCriteriaChange={setAcceptanceCriteria}
               onSubmit={submitStory}
             />
           ) : null}
 
-          {currentStep === 2 && refinedStory ? (
-            <RefinedStoryResult content={refinedStory} timeLeft={timeLeft} />
-          ) : null}
-
-          {currentStep === 3 && refinedStory && !showStep3Result ? (
-            <TestCaseForm
-              refinedStory={refinedStory}
-              isLoading={isLoading}
-              disabled={pipelineDisabled}
-              onSubmit={submitTestCases}
-            />
-          ) : null}
-
-          {currentStep === 3 && testCases && showStep3Result ? (
-            <TestCaseResult content={testCases} timeLeft={timeLeft} />
-          ) : null}
-
-          {currentStep === 4 ? (
-            <section className="rounded-xl border border-surface-border bg-surface-card p-6">
-              <h2 className="text-xl font-semibold">Test script generation</h2>
-              <p className="mt-2 text-sm text-muted">
-                Step 4 is reserved for Agent 3. Test cases are ready to move into script generation.
-              </p>
-            </section>
-          ) : null}
+          <PipelineStageContent
+            currentStep={currentStep}
+            refinedStory={refinedStory}
+            testCases={testCases}
+            playwrightScript={playwrightScript}
+            timeLeft={timeLeft}
+          />
 
           {isLoading ? <LoadingOverlay message={getLoadingMessage(currentStep)} /> : null}
         </div>
@@ -100,7 +83,8 @@ function App() {
 
 function getLoadingMessage(step: PipelineStep) {
   if (step === 1) return 'Refining user story with Agent 1...';
-  if (step === 3) return 'Generating test cases with Agent 2...';
+  if (step === 2) return 'Resuming workflow for Agent 2...';
+  if (step === 3) return 'Resuming workflow for Agent 3...';
   return 'Processing...';
 }
 

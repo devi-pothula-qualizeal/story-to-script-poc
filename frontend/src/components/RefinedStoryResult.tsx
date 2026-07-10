@@ -9,7 +9,7 @@ export function RefinedStoryResult({ content, timeLeft }: RefinedStoryResultProp
   return (
     <AgentOutputPanel
       title="Refined user story"
-      subtitle="Agent 1 output · INVEST-aligned · displaying for 1 minute"
+      subtitle="Agent 1 output · INVEST-aligned · displaying for 5 seconds"
       content={content}
       timeLeft={timeLeft}
     />

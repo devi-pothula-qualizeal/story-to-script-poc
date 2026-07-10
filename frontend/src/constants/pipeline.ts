@@ -1,6 +1,6 @@
 import type { PipelineStepConfig } from '@/types/pipeline';
 
-export const DISPLAY_DURATION_SECONDS = 60;
+export const DISPLAY_DURATION_SECONDS = 5;
 
 export const PIPELINE_STEPS: PipelineStepConfig[] = [
   { id: 1, label: 'Story Intake' },
