@@ -1,8 +1,24 @@
 import { apiPost } from '@/services/apiClient';
-import type { RefineStoryRequest, RefineStoryResponse, StoryIntake } from '@/types/pipeline';
+import type {
+  StoryIntake,
+  WorkflowNextRequest,
+  WorkflowNextResponse,
+  WorkflowStartRequest,
+  WorkflowStartResponse,
+} from '@/types/pipeline';
 
-export async function refineStory(input: StoryIntake): Promise<string> {
-  const payload: RefineStoryRequest = { user_story: input.userStory };
-  const data = await apiPost<RefineStoryResponse>('/api/refine', payload);
-  return data.refined_story;
+export async function startWorkflow(input: StoryIntake & { threadId: string }): Promise<WorkflowStartResponse> {
+  const payload: WorkflowStartRequest = {
+    description: input.description,
+    acceptance_criteria: input.acceptanceCriteria,
+    thread_id: input.threadId,
+  };
+
+  return apiPost<WorkflowStartResponse>('/api/workflow/start', payload);
+}
+
+export async function resumeWorkflow(threadId: string): Promise<WorkflowNextResponse> {
+  const payload: WorkflowNextRequest = { thread_id: threadId };
+
+  return apiPost<WorkflowNextResponse>('/api/workflow/next', payload);
 }

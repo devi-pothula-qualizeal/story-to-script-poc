@@ -1,8 +1,11 @@
-fastapi>=0.115.0
-uvicorn[standard]>=0.32.0
-pydantic>=2.10.0
-pydantic-settings>=2.6.0
-python-dotenv>=1.0.1
+fastapi==0.139.0
+uvicorn==0.51.0
+langgraph==1.2.8
+langchain-core==1.4.9
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-dotenv==1.2.2
+requests==2.34.2
 
-# Dev / quality
-ruff>=0.8.0
+# Development
+ruff==0.15.20
