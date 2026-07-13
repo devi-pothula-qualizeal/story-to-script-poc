@@ -35,3 +35,30 @@ export interface PipelineStepConfig {
   label: string;
   sublabel?: string;
 }
+
+export interface RefinedUserStory {
+  needs_clarification: boolean;
+  clarification_questions?: string[] | null;
+  title?: string | null;
+  user_story?: string | null;
+  acceptance_criteria?: Scenario[] | null;
+  invest_review?: InvestReview | null;
+  assumptions?: string[] | null;
+}
+
+
+export interface Scenario {
+  title: string;
+  given: string;
+  when: string;
+  then: string;
+}
+
+export interface InvestReview {
+  independent: string;
+  negotiable: string;
+  valuable: string;
+  estimable: string;
+  small: string;
+  testable: string;
+}

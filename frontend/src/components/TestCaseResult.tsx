@@ -9,7 +9,7 @@ export function TestCaseResult({ content, timeLeft }: TestCaseResultProps) {
   return (
     <AgentOutputPanel
       title="Generated test cases"
-      subtitle="Agent 2 output · displaying for 5 seconds"
+      subtitle={`Agent 2 output · displaying for ${timeLeft} seconds`}
       content={content}
       timeLeft={timeLeft}
     />

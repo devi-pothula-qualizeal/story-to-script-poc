@@ -2,26 +2,29 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { v4 as uuidv4 } from 'uuid';
 
-
 import { DISPLAY_DURATION_SECONDS } from '@/constants/pipeline';
 import { useCountdown } from '@/hooks/useCountdown';
 import { resumeWorkflow, startWorkflow } from '@/services/pipelineService';
-import type { PipelineStep } from '@/types/pipeline';
+import type { PipelineStep, RefinedUserStory } from '@/types/pipeline';
 import { formatApiError, type FormattedError } from '@/utils/formatApiError';
 
 export function usePipeline() {
-    const [threadId, setThreadId] = useState<string | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(null);
 
   const [currentStep, setCurrentStep] = useState<PipelineStep>(1);
   const [description, setDescription] = useState('');
   const [acceptanceCriteria, setAcceptanceCriteria] = useState('');
-  const [refinedStory, setRefinedStory] = useState<string | null>(null);
+  const [refinedStory, setRefinedStory] = useState<RefinedUserStory | null>(null);
+  const [needsClarification, setNeedsClarification] = useState(false);
   const [testCases, setTestCases] = useState<string | null>(null);
   const [playwrightScript, setPlaywrightScript] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<FormattedError | null>(null);
   const currentStepRef = useRef<PipelineStep>(currentStep);
   const threadIdRef = useRef<string | null>(threadId);
+  const needsClarificationRef = useRef(false);
+
+  needsClarificationRef.current = needsClarification;
 
   currentStepRef.current = currentStep;
   threadIdRef.current = threadId;
@@ -36,6 +39,15 @@ export function usePipeline() {
         message: 'The workflow thread was not found. Please start again.',
         errorCode: null,
       });
+      setCurrentStep(1);
+      return;
+    }
+
+    // In handleTimerComplete:
+    if (step === 2 && needsClarificationRef.current) {
+      setNeedsClarification(false);
+      setThreadId(null);
+      setRefinedStory(null);
       setCurrentStep(1);
       return;
     }
@@ -73,10 +85,7 @@ export function usePipeline() {
     }
   }, []);
 
-  const { timeLeft, startTimer } = useCountdown(
-    DISPLAY_DURATION_SECONDS,
-    handleTimerComplete,
-  );
+  const { timeLeft, startTimer } = useCountdown(DISPLAY_DURATION_SECONDS, handleTimerComplete);
 
   useEffect(() => {
     if (currentStep === 2 || currentStep === 3) {
@@ -99,13 +108,19 @@ export function usePipeline() {
     setRefinedStory(null);
     setTestCases(null);
     setPlaywrightScript(null);
-
-    try {
+    setNeedsClarification(false);
+    try {      
       const generatedThreadId = uuidv4();
       setThreadId(generatedThreadId);
 
-      const response = await startWorkflow({ description, acceptanceCriteria, threadId: generatedThreadId });
-      setRefinedStory(response.result.refined_user_story ?? null);
+      const response = await startWorkflow({
+        description,
+        acceptanceCriteria,
+        threadId: generatedThreadId,
+      });
+      const story = response.result.refined_user_story as unknown as RefinedUserStory;
+      setRefinedStory(story);
+      setNeedsClarification(story.needs_clarification);
       setCurrentStep(2);
     } catch (err) {
       setError(formatApiError(err));

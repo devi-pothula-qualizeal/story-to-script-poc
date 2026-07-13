@@ -1,10 +1,11 @@
 import { RefinedStoryResult } from '@/components/RefinedStoryResult';
 import { TestCaseResult } from '@/components/TestCaseResult';
-import type { PipelineStep } from '@/types/pipeline';
+import type { PipelineStep, RefinedUserStory } from '@/types/pipeline';
+import { formatClarificationQuestions, formatSuccessStory } from '@/utils/formatRefinedStory';
 
 interface PipelineStageContentProps {
   currentStep: PipelineStep;
-  refinedStory: string | null;
+  refinedStory: RefinedUserStory | null;
   testCases: string | null;
   playwrightScript: string | null;
   timeLeft: number;
@@ -18,7 +19,20 @@ export function PipelineStageContent({
   timeLeft,
 }: PipelineStageContentProps) {
   if (currentStep === 2 && refinedStory) {
-    return <RefinedStoryResult content={refinedStory} timeLeft={timeLeft} />;
+    if (refinedStory.needs_clarification) {
+      return (
+        <RefinedStoryResult
+          content={formatClarificationQuestions(refinedStory.clarification_questions)}
+          timeLeft={timeLeft}
+        />
+      );
+    }
+    return (
+      <RefinedStoryResult
+        content={formatSuccessStory(refinedStory)}
+        timeLeft={timeLeft}
+      />
+    );
   }
 
   if (currentStep === 3 && testCases) {
