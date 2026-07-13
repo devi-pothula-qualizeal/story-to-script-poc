@@ -2,6 +2,7 @@ import { RefinedStoryResult } from '@/components/RefinedStoryResult';
 import { TestCaseResult } from '@/components/TestCaseResult';
 import type { PipelineStep, RefinedUserStory } from '@/types/pipeline';
 import { formatClarificationQuestions, formatSuccessStory } from '@/utils/formatRefinedStory';
+import { PlaywrightScriptResult } from './PlaywrightScriptResult';
 
 interface PipelineStageContentProps {
   currentStep: PipelineStep;
@@ -41,16 +42,10 @@ export function PipelineStageContent({
 
   if (currentStep === 4 && playwrightScript) {
     return (
-      <section className="rounded-xl border border-surface-border bg-surface-card p-6">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold">Playwright test script</h2>
-          <p className="mt-1 text-sm text-muted">Agent 3 completed the workflow.</p>
-        </div>
-
-        <pre className="max-h-96 overflow-auto rounded-lg border border-surface-border bg-surface-input p-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground">
-          {playwrightScript}
-        </pre>
-      </section>
+      <PlaywrightScriptResult
+        content={playwrightScript}
+        timeLeft={timeLeft}
+      />
     );
   }
 
