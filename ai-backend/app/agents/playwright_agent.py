@@ -13,12 +13,6 @@ from openai import (
 from app.core.config import get_settings
 from app.graph.state import WorkflowState
 
-# --- tuning knobs -----------------------------------------------------------
-MIN_TEST_CASE_LENGTH = 30          # rejects things like "32" or "test"
-REQUIRED_SIGNAL_WORDS = (          # a real test case should mention at least
-    "step", "given", "when", "then", "expected", "verify", "should",
-)
-
 
 class PlaywrightAgentError(Exception):
     """Raised for any Agent 3 failure. `error_code` lets callers branch on it."""
@@ -29,52 +23,65 @@ class PlaywrightAgentError(Exception):
         self.error_code = error_code
 
 
-def _validate_test_cases(test_cases) -> str:
-    """Reject missing, empty, non-string, or nonsense input before it burns an API call."""
+def _format_test_case(test_case: dict) -> str:
+    """Render a single structured test case as readable text for the model."""
+    steps = test_case.get("steps") or []
+    step_lines = [
+        f"  {i}. {step}" for i, step in enumerate(steps, start=1)
+    ]
+
+    return "\n".join(
+        [
+            f"ID: {test_case.get('id', '')}",
+            f"Scenario: {test_case.get('scenario', '')}",
+            f"Preconditions: {test_case.get('preconditions', '')}",
+            "Test Steps:",
+            *step_lines,
+            f"Expected Result: {test_case.get('expected_result', '')}",
+            f"Priority: {test_case.get('priority', '')}",
+            f"Test Type: {test_case.get('test_type', '')}",
+            f"Traceability: {test_case.get('traceability', '')}",
+        ]
+    )
+
+
+def _select_first_test_case(test_cases) -> str:
+    """
+    Accept Agent 2's list of test cases and return the first entry as text
+    for Playwright generation.
+    """
 
     if test_cases is None:
         raise PlaywrightAgentError(
             "No test cases were found on the workflow state.", "missing_test_cases"
         )
 
-    if not isinstance(test_cases, str):
+    if not isinstance(test_cases, list):
         raise PlaywrightAgentError(
-            f"Expected test_cases to be a string, got {type(test_cases).__name__}.",
+            f"Expected test_cases to be a list, got {type(test_cases).__name__}.",
             "invalid_test_cases_type",
         )
 
-    cleaned = test_cases.strip()
-
-    if not cleaned:
+    if not test_cases:
         raise PlaywrightAgentError(
-            "Test cases input is empty or whitespace only.", "empty_test_cases"
+            "Test cases list is empty.", "empty_test_cases"
         )
 
-    if len(cleaned) < MIN_TEST_CASE_LENGTH:
+    first = test_cases[0]
+
+    if not isinstance(first, dict):
         raise PlaywrightAgentError(
-            f"Test cases input is too short ({len(cleaned)} chars) to be a real "
-            f"test case. Expected at least {MIN_TEST_CASE_LENGTH} characters.",
-            "test_cases_too_short",
+            f"Expected each test case to be a dict, got {type(first).__name__}.",
+            "invalid_test_cases_type",
         )
 
-    # purely numeric / symbolic input (e.g. "32", "1234", "----") — no letters at all
-    if not re.search(r"[A-Za-z]{3,}", cleaned):
+    if not first.get("id") or not first.get("scenario") or not first.get("steps"):
         raise PlaywrightAgentError(
-            "Test cases input does not contain recognizable text — it looks "
-            "like garbage or a stray number, not a test case.",
-            "test_cases_not_textual",
-        )
-
-    # loose sanity check: does it look like a test case at all?
-    lowered = cleaned.lower()
-    if not any(word in lowered for word in REQUIRED_SIGNAL_WORDS):
-        raise PlaywrightAgentError(
-            "Test cases input doesn't look like a structured test case "
-            "(no steps, expected result, or given/when/then found).",
+            "First test case is missing required fields (id, scenario, or steps).",
             "test_cases_unrecognized_format",
         )
 
-    return cleaned
+    return _format_test_case(first)
 
 
 def _validate_output(script: str) -> str:
@@ -113,8 +120,8 @@ def _validate_output(script: str) -> str:
 def playwright_agent(state: WorkflowState) -> WorkflowState:
     print("Executing Playwright Agent")
 
-    # 1. validate input
-    test_cases = _validate_test_cases(state.get("test_cases"))
+    # 1. take the first test case from Agent 2's list
+    test_case = _select_first_test_case(state.get("test_cases"))
 
     # 2. validate config (build client here, not at import time, so a missing
     #    key doesn't crash the whole app on startup)
@@ -150,7 +157,7 @@ Requirements:
 
 Approved Test Case:
 
-{test_cases}
+{test_case}
 """
 
     # 3. call OpenAI with real error handling

@@ -1,5 +1,3 @@
-import re
-
 from openai import (
     APIConnectionError,
     APITimeoutError,
@@ -13,12 +11,7 @@ from openai import (
 from app.core.config import get_settings
 from app.graph.state import WorkflowState
 from app.prompts.test_case_prompt import SYSTEM_PROMPT, generate_user_prompt
-
-# --- tuning knobs -----------------------------------------------------------
-MIN_OUTPUT_LENGTH = 50              # rejects near-empty or one-line responses
-REQUIRED_SIGNAL_WORDS = (           # a real test case output should mention at least
-    "test case", "expected", "priority", "steps", "precondition", "test type",
-)
+from app.schemas.test_case import TestCaseOutput
 
 
 class TestCaseAgentError(Exception):
@@ -111,39 +104,32 @@ def _validate_refined_story(refined_user_story) -> tuple[str, str]:
     return story_text, criteria_text
 
 
-def _validate_output(test_cases: str) -> str:
-    """Make sure the model actually returned usable, structured test cases."""
+def _validate_output(parsed: TestCaseOutput | None) -> list[dict]:
+    """Make sure the model returned a usable list of structured test cases."""
 
-    cleaned = test_cases.strip()
-
-    # in case the model ignores "no code fences" instructions
-    if cleaned.startswith("```"):
-        lines = cleaned.splitlines()[1:]
-        if lines and lines[-1].strip().startswith("```"):
-            lines = lines[:-1]
-        cleaned = "\n".join(lines).strip()
-
-    if not cleaned:
+    if parsed is None:
         raise TestCaseAgentError(
-            "OpenAI returned an empty response.", "empty_model_output"
+            "OpenAI returned an empty or unparsable response.",
+            "empty_model_output",
         )
 
-    if len(cleaned) < MIN_OUTPUT_LENGTH:
+    test_cases = [tc.model_dump() for tc in parsed.test_cases]
+
+    if not test_cases:
         raise TestCaseAgentError(
-            f"Generated test cases are too short ({len(cleaned)} chars) to be "
-            f"valid. Expected at least {MIN_OUTPUT_LENGTH} characters.",
+            "Model returned an empty test case list.",
             "invalid_test_case_output",
         )
 
-    lowered = cleaned.lower()
-    if not any(word in lowered for word in REQUIRED_SIGNAL_WORDS):
-        raise TestCaseAgentError(
-            "Model output doesn't look like structured test cases (no "
-            "'Test Case', 'Expected Result', 'Priority', etc. found).",
-            "invalid_test_case_output",
-        )
+    for index, tc in enumerate(test_cases):
+        if not tc.get("id") or not tc.get("scenario") or not tc.get("steps"):
+            raise TestCaseAgentError(
+                f"Test case at index {index} is missing required fields "
+                "(id, scenario, or steps).",
+                "invalid_test_case_output",
+            )
 
-    return cleaned
+    return test_cases
 
 
 def testcase_agent(state: WorkflowState) -> WorkflowState:
@@ -164,13 +150,16 @@ def testcase_agent(state: WorkflowState) -> WorkflowState:
     client = OpenAI(api_key=settings.openai_api_key)
 
     user_prompt = generate_user_prompt(story_text, criteria_text)
-    full_prompt = f"{SYSTEM_PROMPT}\n\n{user_prompt}"
 
-    # 3. call OpenAI with real error handling
+    # 3. call OpenAI with structured output
     try:
-        response = client.responses.create(
+        response = client.beta.chat.completions.parse(
             model=settings.openai_model,
-            input=full_prompt,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format=TestCaseOutput,
         )
     except AuthenticationError as exc:
         raise TestCaseAgentError(
@@ -194,14 +183,10 @@ def testcase_agent(state: WorkflowState) -> WorkflowState:
             f"OpenAI request failed: {exc}", "openai_not_ready"
         ) from exc
 
-    output_text = getattr(response, "output_text", None)
-    if output_text is None:
-        raise TestCaseAgentError(
-            "OpenAI response had no output_text.", "empty_model_output"
-        )
+    parsed = response.choices[0].message.parsed
 
     # 4. validate output before trusting it
-    state["test_cases"] = _validate_output(output_text)
+    state["test_cases"] = _validate_output(parsed)
 
     print("Test cases generated successfully.")
 

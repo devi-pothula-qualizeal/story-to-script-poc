@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DISPLAY_DURATION_SECONDS } from '@/constants/pipeline';
 import { useCountdown } from '@/hooks/useCountdown';
 import { resumeWorkflow, startWorkflow } from '@/services/pipelineService';
-import type { PipelineStep, RefinedUserStory } from '@/types/pipeline';
+import type { PipelineStep, RefinedUserStory, TestCase } from '@/types/pipeline';
 import { formatApiError, type FormattedError } from '@/utils/formatApiError';
 
 export function usePipeline() {
@@ -16,7 +16,7 @@ export function usePipeline() {
   const [acceptanceCriteria, setAcceptanceCriteria] = useState('');
   const [refinedStory, setRefinedStory] = useState<RefinedUserStory | null>(null);
   const [needsClarification, setNeedsClarification] = useState(false);
-  const [testCases, setTestCases] = useState<string | null>(null);
+  const [testCases, setTestCases] = useState<TestCase[] | null>(null);
   const [playwrightScript, setPlaywrightScript] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<FormattedError | null>(null);

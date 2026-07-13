@@ -15,7 +15,7 @@ export interface WorkflowStartResponse {
   thread_id: string;
   result: {
     refined_user_story: string;
-    test_cases?: string;
+    test_cases?: TestCase[];
     playwright_script?: string;
   };
 }
@@ -26,7 +26,7 @@ export interface WorkflowNextRequest {
 
 export interface WorkflowNextResponse {
   refined_user_story?: string;
-  test_cases?: string;
+  test_cases?: TestCase[];
   playwright_script?: string;
 }
 
@@ -61,4 +61,15 @@ export interface InvestReview {
   estimable: string;
   small: string;
   testable: string;
+}
+
+export interface TestCase {
+  id: string;
+  scenario: string;
+  preconditions: string;
+  steps: string[];
+  expected_result: string;
+  priority: string;
+  test_type: string;
+  traceability: string;
 }
