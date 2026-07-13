@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     port: int = 8000
     cors_origins: str = "http://localhost:5173"
 
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

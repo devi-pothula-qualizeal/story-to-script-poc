@@ -1,6 +1,10 @@
+
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.agents.playwright_agent import PlaywrightAgentError
+from app.agents.testcase_agent import TestCaseAgentError
 from app.graph.workflow import graph
 
 router = APIRouter()
@@ -28,11 +32,17 @@ def start_workflow(request: StartWorkflowRequest):
         "description": request.description,
         "acceptance_criteria": request.acceptance_criteria,
         "refined_user_story": "",
-        "test_cases": "",
+        "test_cases": [],
         "playwright_script": "",
     }
 
-    result = graph.invoke(state, config=config)
+    try:
+        result = graph.invoke(state, config=config)
+    except (PlaywrightAgentError, TestCaseAgentError) as exc:
+        return JSONResponse(
+            status_code=502,
+            content={"detail": exc.message, "error_code": exc.error_code},
+        )
 
     return {
         "thread_id": request.thread_id,
@@ -48,4 +58,10 @@ def next_workflow(request: NextWorkflowRequest):
         }
     }
 
-    return graph.invoke(None, config=config)
+    try:
+        return graph.invoke(None, config=config)
+    except (PlaywrightAgentError, TestCaseAgentError) as exc:
+        return JSONResponse(
+            status_code=502,
+            content={"detail": exc.message, "error_code": exc.error_code},
+        )
