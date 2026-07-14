@@ -21,7 +21,7 @@ export function StoryIntakeForm({
   onSubmit,
 }: StoryIntakeFormProps) {
   const isDisabled = disabled || isLoading;
-  const canSubmit = description.trim().length > 0 && acceptanceCriteria.trim().length > 0 && !isDisabled;
+  const canSubmit = description.trim().length > 0 && !isDisabled;
 
   return (
     <section className="rounded-xl border border-surface-border bg-surface-card p-6">

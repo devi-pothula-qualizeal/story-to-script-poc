@@ -1,4 +1,4 @@
-import type { InvestReview, RefinedUserStory, Scenario } from '@/types/pipeline';
+import type { RefinedUserStory, Scenario } from '@/types/pipeline';
 
 function formatScenario(scenario: Scenario, index: number): string {
   return [
@@ -9,17 +9,9 @@ function formatScenario(scenario: Scenario, index: number): string {
   ].join('\n');
 }
 
-function formatInvestReview(review: InvestReview): string {
-  return [
-    `Independent: ${review.independent}`,
-    `Negotiable: ${review.negotiable}`,
-    `Valuable: ${review.valuable}`,
-    `Estimable: ${review.estimable}`,
-    `Small: ${review.small}`,
-    `Testable: ${review.testable}`,
-  ].join('\n');
-}
-
+// NOTE: INVEST review and assumptions are rendered as visual cards
+// (InvestScorecard / AssumptionsCard), so they are intentionally omitted
+// from this plain-text block to avoid duplicating them.
 export function formatSuccessStory(story: RefinedUserStory): string {
   const sections: string[] = [];
 
@@ -35,16 +27,7 @@ export function formatSuccessStory(story: RefinedUserStory): string {
     sections.push(
       'Acceptance Criteria:',
       ...story.acceptance_criteria.map(formatScenario),
-      '',
     );
-  }
-
-  if (story.invest_review) {
-    sections.push('INVEST Review:', formatInvestReview(story.invest_review));
-  }
-
-  if (story.assumptions?.length) {
-    sections.push('', 'Assumptions:', ...story.assumptions.map((a) => `• ${a}`));
   }
 
   return sections.join('\n').trim();

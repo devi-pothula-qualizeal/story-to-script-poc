@@ -43,7 +43,6 @@ export function usePipeline() {
       return;
     }
 
-    // In handleTimerComplete:
     if (step === 2 && needsClarificationRef.current) {
       setNeedsClarification(false);
       setThreadId(null);
@@ -94,7 +93,7 @@ export function usePipeline() {
   }, [currentStep, startTimer]);
 
   const submitStory = useCallback(async () => {
-    if (!description.trim() || !acceptanceCriteria.trim()) {
+    if (!description.trim()) {
       setError({
         title: 'Missing details',
         message: 'Please provide both a description and acceptance criteria.',
