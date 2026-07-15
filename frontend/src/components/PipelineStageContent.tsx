@@ -33,6 +33,8 @@ export function PipelineStageContent({
       <RefinedStoryResult
         content={formatSuccessStory(refinedStory)}
         timeLeft={timeLeft}
+        assumptions={refinedStory.assumptions}
+        investReview={refinedStory.invest_review}
       />
     );
   }

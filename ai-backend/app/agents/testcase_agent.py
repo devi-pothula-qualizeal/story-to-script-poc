@@ -153,7 +153,7 @@ def testcase_agent(state: WorkflowState) -> WorkflowState:
 
     # 3. call OpenAI with structured output
     try:
-        response = client.beta.chat.completions.parse(
+        response = client.chat.completions.parse(
             model=settings.openai_model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},

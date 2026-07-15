@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.agents.playwright_agent import PlaywrightAgentError
+from app.agents.story_agent import StoryAgentError
 from app.agents.testcase_agent import TestCaseAgentError
 from app.graph.workflow import graph
 
@@ -38,7 +39,7 @@ def start_workflow(request: StartWorkflowRequest):
 
     try:
         result = graph.invoke(state, config=config)
-    except (PlaywrightAgentError, TestCaseAgentError) as exc:
+    except (StoryAgentError, PlaywrightAgentError, TestCaseAgentError) as exc:
         return JSONResponse(
             status_code=502,
             content={"detail": exc.message, "error_code": exc.error_code},
@@ -60,7 +61,7 @@ def next_workflow(request: NextWorkflowRequest):
 
     try:
         return graph.invoke(None, config=config)
-    except (PlaywrightAgentError, TestCaseAgentError) as exc:
+    except (StoryAgentError, PlaywrightAgentError, TestCaseAgentError) as exc:
         return JSONResponse(
             status_code=502,
             content={"detail": exc.message, "error_code": exc.error_code},

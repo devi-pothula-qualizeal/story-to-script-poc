@@ -42,8 +42,8 @@ export interface RefinedUserStory {
   title?: string | null;
   user_story?: string | null;
   acceptance_criteria?: Scenario[] | null;
-  invest_review?: InvestReview | null;
   assumptions?: string[] | null;
+  invest_review?: InvestReview | null;
 }
 
 
@@ -54,13 +54,20 @@ export interface Scenario {
   then: string;
 }
 
+export interface InvestCriterion {
+  score: number;
+  assessment: string;
+}
+
 export interface InvestReview {
-  independent: string;
-  negotiable: string;
-  valuable: string;
-  estimable: string;
-  small: string;
-  testable: string;
+  independent: InvestCriterion;
+  negotiable: InvestCriterion;
+  valuable: InvestCriterion;
+  estimable: InvestCriterion;
+  small: InvestCriterion;
+  testable: InvestCriterion;
+  /** Mean of the six principle scores, computed on the backend. */
+  overall_score?: number;
 }
 
 export interface TestCase {
